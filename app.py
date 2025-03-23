@@ -4,73 +4,59 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 
-# Streamlit page configuration
+# Streamlit config
 st.set_page_config(page_title="iSchool LLM Chatbot")
 
 st.markdown("<h1 style='text-align: center; color: orange;'>Syracuse iSchool LLM Chatbot</h1>", unsafe_allow_html=True)
 
-# ---------- 📥 Load CSV Data ----------
+# ---------- 📥 Load Data ----------
 @st.cache_data
-def load_course_data():
-    df = pd.read_csv('syracuse_ischool_courses.csv')  # Ensure this CSV is in your repo!
-    return df
+def load_data():
+    return pd.read_csv('syracuse_ischool_courses.csv')
 
-courses_df = load_course_data()
+df = load_data()
 
-# ---------- BERT Model & FAISS Setup ----------
-
-# Load pre-trained Sentence-BERT model
+# ---------- 🔥 Load Model ----------
 @st.cache_resource
 def load_model():
-    return SentenceTransformer('bert-base-nli-mean-tokens')
+    model = SentenceTransformer('bert-base-nli-mean-tokens')
+    return model
 
 model = load_model()
 
-# Function to encode course descriptions into embeddings
+# ---------- 🔥 Compute Embeddings ----------
 @st.cache_data
-def get_embeddings(texts):
-    return model.encode(texts)
+def compute_embeddings(descriptions):
+    return model.encode(descriptions)
 
-# Encode all course descriptions
-course_embeddings = get_embeddings(courses_df['Description'].tolist())
+embeddings = compute_embeddings(df['Description'].tolist())
 
-# FAISS Indexing
+# ---------- 🔥 Build FAISS Index ----------
 @st.cache_resource
-def build_faiss_index(embeddings):
-    index = faiss.IndexFlatL2(embeddings.shape[1])  # L2 distance for similarity search
-    index.add(np.array(embeddings))  # Add the embeddings to the index
+def build_index(embeddings):
+    index = faiss.IndexFlatL2(embeddings.shape[1])
+    index.add(np.array(embeddings))
     return index
 
-faiss_index = build_faiss_index(course_embeddings)
+index = build_index(embeddings)
 
-# ---------- 🔍 Search Function using FAISS ----------
-def search_courses(query, top_k=5):
+# ---------- 🔍 Search ----------
+def search(query, k=3):
     query_embedding = model.encode([query])
-    distances, indices = faiss_index.search(np.array(query_embedding), top_k)
-    return indices[0], distances[0]
+    distances, indices = index.search(np.array(query_embedding), k)
+    return indices[0]
 
-# ---------- 💬 Chat Input ----------
-user_input = st.chat_input("Ask me a course-related question...")
+# ---------- 💬 Chat ----------
+user_input = st.chat_input("Ask about courses:")
 
 if user_input:
-    # Search for relevant courses
-    indices, distances = search_courses(user_input)
+    st.session_state.setdefault('history', []).append({"role": "user", "content": user_input})
+    indices = search(user_input)
     
-    if len(indices) > 0:
-        st.write("📚 **Courses Found:**")
-        for idx in indices:
-            course = courses_df.iloc[idx]
-            st.write(f"**{course['Course Code']} - {course['Course Name']}**: {course['Description']}")
-    else:
-        st.write("😕 Sorry, I couldn't find any courses matching your query.")
-
-# ---------- 📜 Display Chat History ----------
-if 'history' not in st.session_state:
-    st.session_state['history'] = []
-
-st.session_state['history'].append({"role": "user", "content": user_input})
-
-for msg in st.session_state['history']:
-    role = msg['role'].capitalize()
-    content = msg['content']
-    st.write(f"**{role}**: {content}")
+    st.write("📚 **Courses Found:**")
+    for idx in indices:
+        course = df.iloc[idx]
+        st.write(f"**{course['Course Code']} - {course['Course Name']}**: {course['Description']}")
+    
+    for msg in st.session_state['history']:
+        st.write(f"**{msg['role'].capitalize()}**: {msg['content']}")
