@@ -27,4 +27,4 @@ if 'history' not in st.session_state:
 user_input = st.chat_input("Ask me a course-related question...")
 
 if user_input and api_key:
-    st.session_state_
+    st.session_state
