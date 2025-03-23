@@ -1,4 +1,5 @@
 streamlit
-openai
-sentence-transformers
-faiss-cpu
+pandas
+torch
+transformers
+faiss-cpu  # or faiss-gpu if you have a GPU
