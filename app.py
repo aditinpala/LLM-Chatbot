@@ -78,4 +78,3 @@ if 'history' in st.session_state:
         role = msg['role'].capitalize()
         content = msg['content']
         st.write(f"**{role}**: {content}")
-
