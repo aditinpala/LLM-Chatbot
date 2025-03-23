@@ -4,22 +4,22 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 
-# Streamlit config
+# ---------- 🛠 Streamlit Page Config ----------
 st.set_page_config(page_title="iSchool LLM Chatbot")
-
 st.markdown("<h1 style='text-align: center; color: orange;'>Syracuse iSchool LLM Chatbot</h1>", unsafe_allow_html=True)
 
-# ---------- 📥 Load Data ----------
+# ---------- 📥 Load Course Data ----------
 @st.cache_data
 def load_data():
-    return pd.read_csv('syracuse_ischool_courses.csv')
+    df = pd.read_csv('syracuse_ischool_courses.csv')  # CSV should have Course Code, Course Name, Description
+    return df
 
 df = load_data()
 
-# ---------- 🔥 Load Model ----------
+# ---------- 🔥 Load Sentence-BERT Model ----------
 @st.cache_resource
 def load_model():
-    model = SentenceTransformer('bert-base-nli-mean-tokens')
+    model = SentenceTransformer('all-MiniLM-L6-v2')  # Smaller + faster model, better for Streamlit Cloud
     return model
 
 model = load_model()
@@ -27,7 +27,7 @@ model = load_model()
 # ---------- 🔥 Compute Embeddings ----------
 @st.cache_data
 def compute_embeddings(descriptions):
-    return model.encode(descriptions)
+    return model.encode(descriptions, convert_to_numpy=True)
 
 embeddings = compute_embeddings(df['Description'].tolist())
 
@@ -35,22 +35,25 @@ embeddings = compute_embeddings(df['Description'].tolist())
 @st.cache_resource
 def build_index(embeddings):
     index = faiss.IndexFlatL2(embeddings.shape[1])
-    index.add(np.array(embeddings))
+    index.add(embeddings)
     return index
 
 index = build_index(embeddings)
 
-# ---------- 🔍 Search ----------
+# ---------- 🔍 Search Function ----------
 def search(query, k=3):
-    query_embedding = model.encode([query])
-    distances, indices = index.search(np.array(query_embedding), k)
+    query_embedding = model.encode([query], convert_to_numpy=True)
+    distances, indices = index.search(query_embedding, k)
     return indices[0]
 
 # ---------- 💬 Chat ----------
-user_input = st.chat_input("Ask about courses:")
+user_input = st.chat_input("Ask about iSchool courses:")
+
+if 'history' not in st.session_state:
+    st.session_state['history'] = []
 
 if user_input:
-    st.session_state.setdefault('history', []).append({"role": "user", "content": user_input})
+    st.session_state['history'].append({"role": "user", "content": user_input})
     indices = search(user_input)
     
     st.write("📚 **Courses Found:**")
@@ -58,5 +61,14 @@ if user_input:
         course = df.iloc[idx]
         st.write(f"**{course['Course Code']} - {course['Course Name']}**: {course['Description']}")
     
+    # Append assistant response (for history)
+    st.session_state['history'].append({"role": "assistant", "content": f"Displayed top {len(indices)} course results."})
+
+# ---------- 📜 Display Chat History ----------
+if st.session_state['history']:
+    st.write("---")
+    st.write("### 📝 Chat History:")
     for msg in st.session_state['history']:
-        st.write(f"**{msg['role'].capitalize()}**: {msg['content']}")
+        role = msg['role'].capitalize()
+        content = msg['content']
+        st.write(f"**{role}**: {content}")
