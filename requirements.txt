@@ -1,7 +1,5 @@
-streamlit==1.43.2
+streamlit==1.25.0
 pandas==2.2.3
-transformers==4.37.2
 sentence-transformers==2.2.2
-scikit-learn==1.4.2
 faiss-cpu==1.7.4
 numpy==1.26.4
