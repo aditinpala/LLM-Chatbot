@@ -2,4 +2,4 @@ streamlit
 faiss-cpu==1.10.0
 pandas
 transformers
-torch==2.6.0+cpu
+torch==2.5.1
