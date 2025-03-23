@@ -1,5 +1,5 @@
 import streamlit as st
-import openai
+from openai import OpenAI
 
 # Streamlit page config
 st.set_page_config(page_title="iSchool LLM Chatbot")
@@ -8,8 +8,9 @@ st.markdown("<h1 style='text-align: center; color: orange;'>Syracuse iSchool LLM
 
 # API Key input (secured)
 api_key = st.text_input("Enter your OpenAI API Key:", type="password")
+client = None
 if api_key:
-    openai.api_key = api_key
+    client = OpenAI(api_key=api_key)
 
 # Tone Selection
 tone = st.selectbox("Choose Bot Tone:", ["Formal Academic", "Friendly Casual"])
@@ -27,21 +28,21 @@ if 'history' not in st.session_state:
 # Chat Input
 user_input = st.chat_input("Ask me a course-related question...")
 
-if user_input and api_key:
+if user_input and client:
     # Append user message to history
-    st.session_state.history.append({"role": "user", "content": user_input})
+    st.session_state['history'].append({"role": "user", "content": user_input})
     
     # Call OpenAI API
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
-        messages=st.session_state.history
+        messages=st.session_state['history']
     )
     
     # Get reply
     reply = response.choices[0].message.content.strip()
     
     # Append assistant reply to history
-    st.session_state.history.append({"role": "assistant", "content": reply})
+    st.session_state['history'].append({"role": "assistant", "content": reply})
 
 # Display chat history nicely
 for msg in st.session_state['history']:
