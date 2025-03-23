@@ -48,17 +48,32 @@ def search_courses_faiss(query):
 user_input = st.chat_input("Ask me a course-related question...")
 
 if user_input:
-    # Step 1: Search Courses using FAISS
-    matched_courses = search_courses_faiss(user_input)
+    # Step 1: Search CSV first
+    matched_courses = search_courses(user_input)
     if not matched_courses.empty:
         st.write("📚 **Courses Found:**")
         for idx, row in matched_courses.iterrows():
-            st.write(f"**{row['Course Name']}**: {row['Description']}")
-    else:
-        st.write("No matching courses found.")
+            # Display course code and name together
+            st.write(f"**{row['Course Code']} - {row['Course Name']}**: {row['Description']}")
+    
+    # Step 2: Fallback to OpenAI if no match OR general questions
+    if client:
+        st.session_state['history'].append({"role": "user", "content": user_input})
+        
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=st.session_state['history']
+        )
+        
+        reply = response.choices[0].message.content.strip()
+        
+        st.session_state['history'].append({"role": "assistant", "content": reply})
+        st.write(f"**Assistant**: {reply}")
 
 # ---------- 📜 Display Chat History ----------
-for msg in st.session_state.get('history', []):
-    role = msg['role'].capitalize()
-    content = msg['content']
-    st.write(f"**{role}**: {content}")
+if 'history' in st.session_state:
+    for msg in st.session_state['history']:
+        role = msg['role'].capitalize()
+        content = msg['content']
+        st.write(f"**{role}**: {content}")
+
