@@ -1,7 +1,2 @@
-streamlit==1.25.0
-pandas==2.2.3
-sentence-transformers==2.2.2
-faiss-cpu
-numpy==1.26.4
-scikit-learn==1.4.2
-pillow>=10.0
+streamlit
+pandas
