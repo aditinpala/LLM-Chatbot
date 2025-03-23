@@ -1,8 +1,7 @@
 streamlit==1.43.2
-faiss-cpu==1.10.0
 pandas==2.2.3
-transformers==4.50.0
-torch==2.6.0
-numpy==2.2.4
-tokenizers==0.21.1
-sentence-transformers==3.4.1
+transformers==4.37.2
+sentence-transformers==2.2.2
+scikit-learn==1.4.2
+faiss-cpu==1.7.4
+numpy==1.26.4
