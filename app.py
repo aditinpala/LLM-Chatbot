@@ -39,10 +39,12 @@ faiss_index = faiss.IndexFlatL2(course_embeddings.shape[1])  # L2 distance for s
 faiss_index.add(np.array(course_embeddings))  # Add the embeddings to the index
 
 # ---------- 🔍 Search Function using FAISS ----------
-def search_courses_faiss(query):
-    query_embedding = get_bert_embeddings([query])
-    _, indices = faiss_index.search(query_embedding, k=5)  # Search for top 5 most similar courses
-    return courses_df.iloc[indices[0]]
+def search_courses(user_input):
+    # Assuming you have a CSV of courses with columns 'Course Name' and 'Description'
+    df = pd.read_csv("courses.csv")  # Make sure the path is correct
+    matched_courses = df[df['Course Name'].str.contains(user_input, case=False, na=False)]
+    return matched_courses
+
 
 # ---------- 💬 Chat Input ----------
 user_input = st.chat_input("Ask me a course-related question...")
