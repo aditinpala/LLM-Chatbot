@@ -1,5 +1,5 @@
-streamlit==1.43.2
+streamlit
 faiss-cpu==1.10.0
+pandas
+transformers
 torch==2.6.0+cpu
-transformers==4.50.0
-pandas==2.2.3
