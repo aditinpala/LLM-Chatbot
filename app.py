@@ -7,34 +7,33 @@ st.set_page_config(page_title="iSchool LLM Chatbot")
 
 st.markdown("<h1 style='text-align: center; color: orange;'>Syracuse iSchool LLM Chatbot</h1>", unsafe_allow_html=True)
 
-# API Key input (secured)
+# ---------- 🔑 API Key ----------
 api_key = st.text_input("Enter your OpenAI API Key:", type="password")
 client = None
 if api_key:
     client = OpenAI(api_key=api_key)
 
-# Tone Selection
+# ---------- 🎛️ Tone Selection ----------
 tone = st.selectbox("Choose Bot Tone:", ["Formal Academic", "Friendly Casual"])
 
-# Define System Prompt based on tone
 if tone == "Formal Academic":
     system_prompt = "You are a formal academic advisor. Keep responses professional."
 else:
     system_prompt = "You are a friendly study buddy. Keep responses casual."
 
-# Initialize session state for memory
+# ---------- 🧠 Session State Memory ----------
 if 'history' not in st.session_state:
     st.session_state['history'] = [{"role": "system", "content": system_prompt}]
 
 # ---------- 📥 Load CSV Data ----------
 @st.cache_data
 def load_course_data():
-    df = pd.read_csv('syracuse_ischool_courses.csv')  # Ensure this CSV is in your repo!
+    df = pd.read_csv('syracuse_ischool_courses.csv')  # Ensure CSV is in repo!
     return df
 
 courses_df = load_course_data()
 
-# ---------- 🔍 Search Function ----------
+# ---------- 🔍 Search Courses ----------
 def search_courses(query):
     results = courses_df[courses_df['Course Name'].str.contains(query, case=False, na=False) |
                          courses_df['Description'].str.contains(query, case=False, na=False)]
@@ -50,20 +49,20 @@ if user_input:
         st.write("📚 **Courses Found:**")
         for idx, row in matched_courses.iterrows():
             st.write(f"**{row['Course Name']}**: {row['Description']}")
-    
-    # Step 2: Fallback to OpenAI if no match OR general questions
+
+    # Step 2: Fallback to OpenAI if general query or no match
     if client:
         st.session_state['history'].append({"role": "user", "content": user_input})
-        
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=st.session_state['history']
-        )
-        
-        reply = response.choices[0].message.content.strip()
-        
-        st.session_state['history'].append({"role": "assistant", "content": reply})
-        st.write(f"**Assistant**: {reply}")
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=st.session_state['history']
+            )
+            reply = response.choices[0].message.content.strip()
+            st.session_state['history'].append({"role": "assistant", "content": reply})
+            st.write(f"**Assistant**: {reply}")
+        except Exception as e:
+            st.error("⚠️ OpenAI API issue detected. Please check quota or billing.")
 
 # ---------- 📜 Display Chat History ----------
 for msg in st.session_state['history']:
